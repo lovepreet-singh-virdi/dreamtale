@@ -1,0 +1,48 @@
+name: Jira Naming Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  naming:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name format
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          echo "Branch: $BRANCH"
+
+          # Allowed formats:
+          # story/DREAM-123-short-summary
+          # task/DREAM-123-short-summary
+          # bug/DREAM-123-short-summary
+          if echo "$BRANCH" | grep -Eq '^(story|task|bug)/DREAM-[0-9]+-[a-z0-9]+([a-z0-9-]*[a-z0-9])?$'; then
+            echo "✅ Branch name format is valid."
+          else
+            echo "❌ Invalid branch name."
+            echo "Required format: <issue-type>/DREAM-<number>-<short-summary>"
+            echo "Examples:"
+            echo "  story/DREAM-12-create-dream-world"
+            echo "  task/DREAM-7-fix-login-crash"
+            echo "  bug/DREAM-1-initial-setup"
+            exit 1
+          fi
+
+      - name: Validate PR title contains Jira key
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR Title: $TITLE"
+
+          # Require DREAM-<number> anywhere in title
+          if echo "$TITLE" | grep -Eq 'DREAM-[0-9]+'; then
+            echo "✅ PR title contains Jira key."
+          else
+            echo "❌ PR title must include Jira key like DREAM-12"
+            echo "Examples:"
+            echo "  DREAM-12: Create dream world UI"
+            echo "  DREAM-12 - Create dream world UI"
+            exit 1
+          fi
